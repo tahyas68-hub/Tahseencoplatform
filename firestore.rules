@@ -29,9 +29,9 @@ service cloud.firestore {
 
     match /courses/{courseId} {
       allow read: if true;
-      allow create: if isValidId(courseId) && isValidCourse(incoming());
-      // Admin only updates normally, but we allow anyone to create for demo
-      // In a real app we'd restrict it
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
     }
   }
 }
