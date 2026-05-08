@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
 
@@ -27,7 +27,7 @@ export const api = {
   async addCourse(courseData: Partial<Course>): Promise<{ id: string }> {
     const docRef = await addDoc(collection(db, 'courses'), {
       ...courseData,
-      createdAt: Timestamp.now()
+      createdAt: serverTimestamp()
     });
     return { id: docRef.id };
   },
