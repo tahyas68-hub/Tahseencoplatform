@@ -463,6 +463,7 @@ function OverviewTab() {
 
 function CoursesTab() {
   const [showAddCourse, setShowAddCourse] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -479,11 +480,21 @@ function CoursesTab() {
       });
   }, []);
 
-  if (showAddCourse) {
+  if (showAddCourse || editingCourse) {
     return (
       <AddCourseView
-        onBack={() => setShowAddCourse(false)}
-        onSuccess={(newCourse) => setCourses((prev) => [...prev, newCourse])}
+        course={editingCourse}
+        onBack={() => {
+          setShowAddCourse(false);
+          setEditingCourse(null);
+        }}
+        onSuccess={(newCourse) => {
+          if (editingCourse) {
+            setCourses((prev) => prev.map(c => c.id === newCourse.id ? newCourse : c));
+          } else {
+            setCourses((prev) => [...prev, newCourse]);
+          }
+        }}
       />
     );
   }
@@ -536,7 +547,7 @@ function CoursesTab() {
                   {course.price}
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 backdrop-blur-[2px] transition-all pointer-events-auto z-20">
-                  <button className="bg-white text-gray-900 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:scale-105 transition-transform">
+                  <button onClick={() => setEditingCourse(course)} className="bg-white text-gray-900 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:scale-105 transition-transform">
                     تعديل الكورس
                   </button>
                 </div>
@@ -566,8 +577,8 @@ function CoursesTab() {
                     <span>{course.students || 0} طالب</span>
                   </div>
                 </div>
-                <button className="w-full mt-auto py-2.5 border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 hover:text-primary-600 hover:border-primary-200 transition-colors flex items-center justify-center gap-2 group-hover:border-primary-200">
-                  عرض التفاصيل
+                <button onClick={() => setEditingCourse(course)} className="w-full mt-auto py-2.5 border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 hover:text-primary-600 hover:border-primary-200 transition-colors flex items-center justify-center gap-2 group-hover:border-primary-200">
+                  تعديل التفاصيل
                   <ArrowRight className="w-4 h-4 rotate-180 text-gray-400 group-hover:text-primary-500" />
                 </button>
               </div>
@@ -580,9 +591,11 @@ function CoursesTab() {
 }
 
 function AddCourseView({
+  course,
   onBack,
   onSuccess,
 }: {
+  course?: any;
   onBack: () => void;
   onSuccess: (course: any) => void;
 }) {
@@ -590,15 +603,15 @@ function AddCourseView({
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoType, setVideoType] = useState<"upload" | "url">("url");
-  const [externalVideoUrl, setExternalVideoUrl] = useState("");
+  const [videoType, setVideoType] = useState<"upload" | "url">(course?.videoUrl && !course.videoUrl.startsWith('blob:') ? "url" : "url");
+  const [externalVideoUrl, setExternalVideoUrl] = useState(course?.videoUrl || "");
 
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    price: "مجاني",
-    duration: "ساعتين",
-    instructor: "أستاذ المادة",
+    title: course?.title || "",
+    description: course?.description || "",
+    price: course?.price || "مجاني",
+    duration: course?.duration || "ساعتين",
+    instructor: course?.instructor || "أستاذ المادة",
   });
 
   const handleUpload = async () => {
@@ -633,28 +646,35 @@ function AddCourseView({
       }
 
       setUploadProgress(85);
-      const newCourse = await api.addCourse({
+      
+      const coursePayload = {
         ...formData,
         videoUrl: finalVideoUrl,
-        students: 0,
-        type: "فيديو حصري",
-      });
+        students: course?.students || 0,
+        type: course?.type || "فيديو حصري",
+      };
 
-      setUploadProgress(100);
-
-      setTimeout(() => {
-        setUploading(false);
-        setUploadProgress(0);
-        alert("تم حفظ الكورس بنجاح!");
-        onSuccess({
-          id: newCourse.id,
-          ...formData,
-          videoUrl: finalVideoUrl,
-          students: 0,
-          type: "فيديو حصري",
-        });
-        onBack();
-      }, 500);
+      if (course?.id) {
+         await api.updateCourse(course.id, coursePayload);
+         setUploadProgress(100);
+         setTimeout(() => {
+           setUploading(false);
+           setUploadProgress(0);
+           alert("تم تحديث الكورس بنجاح!");
+           onSuccess({ id: course.id, ...coursePayload });
+           onBack();
+         }, 500);
+      } else {
+         const newCourse = await api.addCourse(coursePayload);
+         setUploadProgress(100);
+         setTimeout(() => {
+           setUploading(false);
+           setUploadProgress(0);
+           alert("تم حفظ الكورس بنجاح!");
+           onSuccess({ id: newCourse.id, ...coursePayload });
+           onBack();
+         }, 500);
+      }
     } catch (err: any) {
       setUploading(false);
       setUploadProgress(0);
@@ -674,10 +694,10 @@ function AddCourseView({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            إضافة كورس / درس جديد
+            {course ? "تعديل الكورس" : "إضافة كورس / درس جديد"}
           </h1>
           <p className="text-gray-500 text-sm">
-            ارفع الفيديو والمواد العلمية الخاصة بالكورس
+            {course ? "قم بتعديل بيانات الكورس بما في ذلك الأسعار والروابط" : "ارفع الفيديو والمواد العلمية الخاصة بالكورس"}
           </p>
         </div>
         <button

@@ -32,6 +32,14 @@ export const api = {
     return { id: docRef.id };
   },
 
+  async updateCourse(id: string, courseData: Partial<Course>): Promise<void> {
+    const docRef = doc(db, 'courses', id);
+    await setDoc(docRef, {
+      ...courseData,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  },
+
   uploadFile(file: File, onProgress: (progress: number) => void): Promise<{ url: string; filename: string }> {
     return new Promise((resolve, reject) => {
       const storageRef = ref(storage, `videos/${Date.now()}_${file.name}`);
