@@ -311,6 +311,17 @@ export default function Dashboard({
 // --- Tabs ---
 
 function OverviewTab() {
+  const [courses, setCourses] = useState<any[]>([]);
+
+  useEffect(() => {
+    api
+      .getCourses()
+      .then((data) => {
+        setCourses(data);
+      })
+      .catch(console.error);
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -331,8 +342,8 @@ function OverviewTab() {
         />
         <StatCard
           title="الكورسات النشطة"
-          value="12"
-          trend="+2"
+          value={courses.length.toString()}
+          trend="المتاحة"
           icon={<BookOpen />}
           color="purple"
         />
@@ -363,27 +374,38 @@ function OverviewTab() {
             </button>
           </div>
           <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-100"
-              >
-                <div className="w-16 h-12 bg-primary-100 rounded-lg flex flex-shrink-0 items-center justify-center">
-                  <Video className="w-6 h-6 text-primary-600" />
+            {courses.length === 0 ? (
+              <p className="text-gray-500 py-4">لا يوجد كورسات مضافة بعد.</p>
+            ) : (
+              courses.slice(0, 4).map((course) => (
+                <div
+                  key={course.id}
+                  className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-100"
+                >
+                  <div className="w-16 h-12 bg-primary-100 rounded-lg flex flex-shrink-0 items-center justify-center overflow-hidden">
+                    {course.videoUrl ? (
+                      <video
+                        src={course.videoUrl}
+                        className="w-full h-full object-cover opacity-50"
+                      />
+                    ) : (
+                      <Video className="w-6 h-6 text-primary-600" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 truncate">
+                      {course.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 truncate">
+                      المعلم: {course.instructor || "غير محدد"}
+                    </p>
+                  </div>
+                  <div className="font-medium text-gray-900 bg-gray-100 px-3 py-1 rounded-md text-sm">
+                    {course.students || 0} طالب
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-900 truncate">
-                    أساسيات البرمجة باستخدام بايثون
-                  </h3>
-                  <p className="text-sm text-gray-500 truncate">
-                    تاريخ النشر: 12 مايو 2026
-                  </p>
-                </div>
-                <div className="font-medium text-gray-900 bg-gray-100 px-3 py-1 rounded-md text-sm">
-                  45 طالب
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col">
@@ -1267,12 +1289,29 @@ function LockIcon(props: any) {
 
 function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [freeCourse, setFreeCourse] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     code: "",
   });
+
+  useEffect(() => {
+    api
+      .getCourses()
+      .then((data) => {
+        const firstFree =
+          data.find((c) => c.price.includes("مجان") || c.videoUrl) || null;
+        setFreeCourse(firstFree);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch courses:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1283,6 +1322,14 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
     if (onSignup) onSignup();
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="w-8 h-8 rounded-full border-4 border-primary-200 border-t-primary-600 animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -1292,26 +1339,37 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
     >
       <div className="bg-white rounded-[2rem] p-4 sm:p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto">
         <div className="aspect-video bg-[#1a1d24] rounded-2xl overflow-hidden mb-8 relative flex flex-col justify-between p-5">
-          <div className="flex-1 flex items-center justify-center">
-            <PlayCircle
-              className="w-[4.5rem] h-[4.5rem] text-white/90 hover:text-white hover:scale-105 transition-transform cursor-pointer"
-              strokeWidth={1}
+          {freeCourse && freeCourse.videoUrl ? (
+            <video
+              src={freeCourse.videoUrl}
+              controls
+              className="absolute inset-0 w-full h-full object-cover"
             />
-          </div>
-          <div className="flex justify-between items-center text-white/90 text-sm font-medium w-full mt-auto">
-            <span>فيديو تعريفي مجاني</span>
-            <span dir="ltr">00:00 / 05:30</span>
-          </div>
+          ) : (
+            <>
+              <div className="flex-1 flex items-center justify-center">
+                <PlayCircle
+                  className="w-[4.5rem] h-[4.5rem] text-white/90 hover:text-white hover:scale-105 transition-transform cursor-pointer"
+                  strokeWidth={1}
+                />
+              </div>
+              <div className="flex justify-between items-center text-white/90 text-sm font-medium w-full mt-auto">
+                <span>فيديو تعريفي مجاني</span>
+                <span dir="ltr">00:00 / 05:30</span>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="text-center mb-8 px-2 sm:px-6">
           <h2 className="text-xl sm:text-2xl font-bold text-[#111827] mb-4">
-            مقدمة عن منصة إديوسمارت
+            {freeCourse ? freeCourse.title : "مقدمة عن منصة إديوسمارت"}
           </h2>
           <p className="text-gray-500 leading-relaxed text-sm sm:text-base">
-            هذا الفيديو متاح لك كـ ضيف لتتعرف على مميزات المنصة وطريقة الشرح.
-            للاستمتاع بكافة الكورسات والمميزات وإجراء الاختبارات، يرجى التسجيل
-            أو شراء الكورسات المتاحة.
+            {freeCourse
+              ? freeCourse.description ||
+                "هذا الفيديو متاح لك كـ ضيف لتتعرف على طريقة الشرح. للاستمتاع بكافة الكورسات والمميزات، يرجى التسجيل."
+              : "هذا الفيديو متاح لك كـ ضيف لتتعرف على مميزات المنصة وطريقة الشرح. للاستمتاع بكافة الكورسات والمميزات وإجراء الاختبارات، يرجى التسجيل أو شراء الكورسات المتاحة."}
           </p>
         </div>
 
@@ -1482,6 +1540,21 @@ function CertificatesTab() {
 
 function MyCoursesTab() {
   const [activeCourse, setActiveCourse] = useState<any>(null);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api
+      .getCourses()
+      .then((data) => {
+        setCourses(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch courses:", err);
+        setLoading(false);
+      });
+  }, []);
 
   if (activeCourse) {
     return (
@@ -1511,71 +1584,56 @@ function MyCoursesTab() {
           تصفح كورسات جديدة
         </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div
-          onClick={() =>
-            setActiveCourse({
-              title: "أساسيات البرمجة باستخدام بايثون",
-              currentLesson: "الدوال والوحدات في بايثون",
-              progress: 65,
-            })
-          }
-          className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:border-primary-300 transition-all group cursor-pointer lg:col-span-2 flex flex-col sm:flex-row"
-        >
-          <div className="w-full sm:w-64 bg-gray-100 relative group-hover:bg-primary-50 transition-colors aspect-video sm:aspect-auto">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <PlayCircle className="w-12 h-12 text-primary-500 opacity-80 group-hover:scale-110 transition-transform" />
-            </div>
-          </div>
-          <div className="p-6 flex-1 flex flex-col justify-between">
-            <div>
-              <span className="text-xs font-bold bg-purple-50 text-purple-600 px-2.5 py-1 rounded-md mb-3 inline-block">
-                الدرس الحالي
-              </span>
-              <h3 className="font-bold text-gray-900 text-xl mb-2">
-                الدوال والوحدات في بايثون
-              </h3>
-              <p className="text-gray-500 text-sm mb-4">
-                كورس: أساسيات البرمجة باستخدام بايثون
-              </p>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs text-gray-500 mb-2 font-medium">
-                <span>التقدم الإجمالي</span>
-                <span>65%</span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-2">
-                <div
-                  className="bg-primary-500 h-2 rounded-full"
-                  style={{ width: "65%" }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-          <div className="h-32 bg-gray-100 p-4 flex flex-col justify-end">
-            <span className="text-xs font-bold text-green-700 bg-green-100 w-fit px-2 py-1 rounded">
-              مكتمل 100%
-            </span>
-          </div>
-          <div className="p-5 flex-1 flex flex-col justify-between">
-            <div>
-              <h3 className="font-bold text-gray-900 text-lg mb-1">
-                المنطق الرياضي
-              </h3>
-              <p className="text-sm text-gray-500">
-                تم اجتياز الاختبار النهائي بنجاح
-              </p>
-            </div>
-            <button className="w-full mt-4 bg-gray-50 text-gray-700 font-medium py-2 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors flex items-center justify-center gap-2">
-              <Award className="w-4 h-4" />
-              عرض الشهادة
-            </button>
-          </div>
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="w-8 h-8 rounded-full border-4 border-primary-200 border-t-primary-600 animate-spin"></div>
         </div>
-      </div>
+      ) : courses.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-2xl border border-gray-200">
+          <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">لا توجد كورسات مضافة بعد.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map((course) => (
+            <div
+              key={course.id}
+              onClick={() => setActiveCourse(course)}
+              className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:border-primary-300 transition-all group flex flex-col cursor-pointer"
+            >
+              <div className="h-40 bg-gradient-to-br from-gray-100 to-primary-50 relative overflow-hidden flex items-center justify-center text-gray-400 group-hover:text-primary-400 transition-colors">
+                {course.videoUrl ? (
+                  <video
+                    src={course.videoUrl}
+                    className="absolute inset-0 w-full h-full object-cover opacity-50"
+                  />
+                ) : (
+                  <ImageIcon className="w-12 h-12" />
+                )}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 backdrop-blur-[2px] transition-all">
+                  <PlayCircle className="w-16 h-16 text-white opacity-90" />
+                </div>
+              </div>
+              <div className="p-5 flex-1 flex flex-col">
+                <h3 className="font-bold text-gray-900 text-lg mb-3 line-clamp-2 leading-snug">
+                  {course.title}
+                </h3>
+                <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                    <span>{course.duration || "12 ساعة"}</span>
+                  </div>
+                  <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                    <User className="w-3.5 h-3.5 text-gray-400" />
+                    <span>{course.instructor || "أستاذ المادة"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }
