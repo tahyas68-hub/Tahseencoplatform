@@ -29,15 +29,6 @@ export default function LandingPage({ onLogin, onGoBack, showBackBtn }: { onLogi
       <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-40 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {showBackBtn && (
-              <button 
-                onClick={onGoBack}
-                className="flex items-center gap-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-colors ml-2"
-              >
-                <ArrowRight className="w-5 h-5" />
-                <span className="text-sm font-medium">رجوع</span>
-              </button>
-            )}
             <div className="flex items-center gap-2 text-primary-600">
               <BrainCircuit className="w-8 h-8" />
               <span className="text-xl font-bold">إديوسمارت</span>
