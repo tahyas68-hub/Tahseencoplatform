@@ -2,7 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+const getAI = () => {
+  if (!aiInstance && process.env.GEMINI_API_KEY) {
+    aiInstance = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  }
+  return aiInstance;
+};
 
 interface Message {
   id: string;
@@ -38,6 +44,11 @@ export default function AIChatbot() {
     try {
       const history = messages.map(m => m.role === 'user' ? `User: ${m.text}` : `AI: ${m.text}`).join('\n');
       const prompt = `أنت مساعد ذكي لمنصة تعليمية عربية. مهمتك الرد على استفسارات الطلاب بخصوص الدروس، الكورسات، الشهادات واستخدام المنصة. كن ودوداً ومختصراً وباللغة العربية الفصحى.\n\nتاريخ المحادثة:\n${history}\n\nUser: ${userMessage}\nAI:`;
+
+      const ai = getAI();
+      if (!ai) {
+        throw new Error('Gemini API key is missing. Please set it in your environment variables.');
+      }
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
