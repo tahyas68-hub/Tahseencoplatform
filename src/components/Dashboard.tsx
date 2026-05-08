@@ -10,6 +10,7 @@ import {
   Clock, User
 } from 'lucide-react';
 import { UserRole } from '../App';
+import { api } from '../services/api';
 
 type Tab = 'overview' | 'courses' | 'quizzes' | 'ai-tutor' | 'codes' | 'my-courses' | 'certificates' | 'free-video' | 'settings' | 'students' | 'reports';
 
@@ -220,8 +221,7 @@ function CoursesTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/courses')
-      .then(res => res.json())
+    api.getCourses()
       .then(data => {
         setCourses(data);
         setLoading(false);
@@ -320,29 +320,18 @@ function AddCourseView({ onBack, onSuccess }: { onBack: () => void, onSuccess: (
       try {
         let videoUrl = '';
         if (videoFile) {
-           const form = new FormData();
-           form.append('file', videoFile);
-           setUploadProgress(40);
-           const uploadRes = await fetch('/api/upload', {
-             method: 'POST',
-             body: form
+           setUploadProgress(10);
+           const uploadData = await api.uploadFile(videoFile, (progress) => {
+             // Scale 10-70% for upload progress
+             setUploadProgress(10 + Math.round(progress * 0.6));
            });
-           setUploadProgress(70);
-           if (!uploadRes.ok) throw new Error('Failed to upload');
-           const uploadData = await uploadRes.json();
            videoUrl = uploadData.url;
         }
 
-        const res = await fetch('/api/courses', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formData, videoUrl })
-        });
+        setUploadProgress(80);
+        const newCourse = await api.addCourse({ ...formData, videoUrl, students: 0, type: 'فيديو حصري' });
         
         setUploadProgress(100);
-        
-        if (!res.ok) throw new Error('Failed to create course');
-        const newCourse = await res.json();
         
         setTimeout(() => {
            setUploading(false);

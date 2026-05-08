@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidCourse(data) {
+      return data.keys().hasAll(['title', 'description', 'price', 'duration', 'instructor', 'type', 'students', 'createdAt'])
+        && data.title is string && data.title.size() <= 200
+        && data.description is string && data.description.size() <= 10000
+        && data.price is string && data.price.size() <= 50
+        && data.duration is string && data.duration.size() <= 50
+        && data.instructor is string && data.instructor.size() <= 200
+        && data.type is string && data.type.size() <= 50
+        && data.students is number
+        && data.createdAt == request.time
+        && ( ('videoUrl' in data) == false || (data.videoUrl is string && data.videoUrl.size() <= 2000) );
+    }
+
+    match /courses/{courseId} {
+      allow read: if true;
+      allow create: if isValidId(courseId) && isValidCourse(incoming());
+      // Admin only updates normally, but we allow anyone to create for demo
+      // In a real app we'd restrict it
+    }
+  }
+}

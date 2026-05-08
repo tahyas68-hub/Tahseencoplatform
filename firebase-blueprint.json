@@ -1,0 +1,27 @@
+{
+  "entities": {
+    "Course": {
+      "title": "Course",
+      "description": "A course entity stored in the database.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "string" },
+        "duration": { "type": "string" },
+        "instructor": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "type": { "type": "string" },
+        "students": { "type": "number" },
+        "createdAt": { "type": "object", "description": "Firestore Timestamp" }
+      },
+      "required": ["title", "description", "price", "duration", "instructor", "type", "students", "createdAt"]
+    }
+  },
+  "firestore": {
+    "courses": {
+      "schema": { "$ref": "#/entities/Course" },
+      "description": "Collection of courses."
+    }
+  }
+}
