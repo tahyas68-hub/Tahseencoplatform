@@ -40,6 +40,24 @@ import {
 import { UserRole } from "../App";
 import { api } from "../services/api";
 
+function getYoutubeVideoInfo(url?: string): { isYoutube: boolean; embedUrl?: string; thumbnailUrl?: string } {
+  if (!url) return { isYoutube: false };
+  let embedUrl = url;
+  let id = "";
+  if (url.includes("youtube.com/watch?v=")) {
+    embedUrl = url.replace("youtube.com/watch?v=", "youtube.com/embed/");
+    embedUrl = embedUrl.split("&")[0];
+    id = url.split("watch?v=")[1]?.split("&")[0];
+    return { isYoutube: true, embedUrl, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
+  } else if (url.includes("youtu.be/")) {
+    embedUrl = url.replace("youtu.be/", "www.youtube.com/embed/");
+    embedUrl = embedUrl.split("?")[0];
+    id = url.split("youtu.be/")[1]?.split("?")[0];
+    return { isYoutube: true, embedUrl, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
+  }
+  return { isYoutube: false, embedUrl: url };
+}
+
 type Tab =
   | "overview"
   | "courses"
@@ -382,14 +400,22 @@ function OverviewTab() {
                   key={course.id}
                   className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-100"
                 >
-                  <div className="w-16 h-12 bg-primary-100 rounded-lg flex flex-shrink-0 items-center justify-center overflow-hidden">
+                  <div className="w-16 h-12 bg-primary-100 rounded-lg flex flex-shrink-0 items-center justify-center overflow-hidden relative">
                     {course.videoUrl ? (
-                      <video
-                        src={course.videoUrl}
-                        className="w-full h-full object-cover opacity-50"
-                      />
+                      getYoutubeVideoInfo(course.videoUrl).isYoutube ? (
+                        <img 
+                          src={getYoutubeVideoInfo(course.videoUrl).thumbnailUrl} 
+                          alt={course.title}
+                          className="w-full h-full object-cover opacity-80"
+                        />
+                      ) : (
+                        <video
+                          src={course.videoUrl}
+                          className="w-full h-full object-cover opacity-50"
+                        />
+                      )
                     ) : (
-                      <Video className="w-6 h-6 text-primary-600" />
+                      <Video className="w-6 h-6 text-primary-600 relative z-10" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -491,10 +517,18 @@ function CoursesTab() {
             >
               <div className="h-40 bg-gradient-to-br from-gray-100 to-primary-50 relative overflow-hidden flex items-center justify-center text-gray-400 group-hover:text-primary-400 transition-colors pointer-events-none">
                 {course.videoUrl ? (
-                  <video
-                    src={course.videoUrl}
-                    className="absolute inset-0 w-full h-full object-cover opacity-50"
-                  />
+                   getYoutubeVideoInfo(course.videoUrl).isYoutube ? (
+                     <img 
+                       src={getYoutubeVideoInfo(course.videoUrl).thumbnailUrl} 
+                       alt={course.title}
+                       className="absolute inset-0 w-full h-full object-cover opacity-80"
+                     />
+                   ) : (
+                     <video
+                       src={course.videoUrl}
+                       className="absolute inset-0 w-full h-full object-cover opacity-50"
+                     />
+                   )
                 ) : (
                   <ImageIcon className="w-12 h-12" />
                 )}
@@ -937,13 +971,8 @@ function QuizzesTab() {
               اختبارات تحتاج مراجعة
             </h3>
             <div className="space-y-3">
-              <div className="p-3 bg-amber-50 text-amber-800 rounded-lg text-sm flex items-center justify-between border border-amber-100">
-                <span>اختبار الفيزياء - الوحدة 1</span>
-                <span className="font-bold">5 أوراق</span>
-              </div>
-              <div className="p-3 bg-gray-50 text-gray-600 rounded-lg text-sm flex items-center justify-between border border-gray-100">
-                <span>امتحان نهاية الكورس</span>
-                <span className="font-bold text-green-600">مكتمل 100%</span>
+              <div className="p-4 text-center text-gray-500 text-sm border-2 border-dashed border-gray-200 rounded-xl">
+                لا يوجد اختبارات تحتاج للمراجعة حالياً.
               </div>
             </div>
           </div>
@@ -1052,22 +1081,6 @@ function AITutorTab({ role }: { role: UserRole }) {
             </h3>
             <div className="space-y-4">
               {/* Source Items */}
-              <div className="border border-gray-200 rounded-xl p-4 flex gap-4 hover:border-primary-300 transition-colors">
-                <div className="bg-blue-50 p-2 rounded-lg h-fit text-blue-600">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-sm text-gray-900">
-                    دليل المنصة (PDF)
-                  </h4>
-                  <p className="text-xs text-gray-500 mt-1 mb-2">
-                    تم استخراج 45 سؤال وإجابة محتملة.
-                  </p>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5">
-                    <div className="bg-green-500 h-1.5 rounded-full w-full"></div>
-                  </div>
-                </div>
-              </div>
               <div className="border border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center text-gray-500 hover:bg-gray-50 cursor-pointer transition-colors">
                 <Plus className="w-6 h-6 mb-2 text-gray-400" />
                 <span className="font-bold text-sm text-gray-700">
@@ -1088,21 +1101,12 @@ function AITutorTab({ role }: { role: UserRole }) {
             <div className="flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
               <div className="bg-primary-600 p-3 text-white flex gap-2 items-center">
                 <BotIcon className="w-5 h-5" />
-                <span className="font-medium text-sm">مساعد إديوسمارت</span>
+                <span className="font-medium text-sm">المساعد الذكي</span>
               </div>
               <div className="flex-1 p-4 bg-slate-50 flex flex-col gap-3">
                 <div className="bg-white border border-gray-100 rounded-2xl rounded-tr-none p-3 shadow-sm text-sm max-w-[85%] self-start flex gap-2">
                   <span className="mt-0.5 text-lg">👋</span>
-                  <span>
-                    مرحباً! أنا المساعد الذكي، كيف أساعدك في فهم درس اليوم؟
-                  </span>
-                </div>
-                <div className="bg-primary-600 text-white rounded-2xl rounded-tl-none p-3 shadow-sm text-sm max-w-[85%] self-end">
-                  كيف أستخرج الشهادة الخاصة بكورس البايثون؟
-                </div>
-                <div className="bg-white border border-gray-100 rounded-2xl rounded-tr-none p-3 shadow-sm text-sm max-w-[85%] self-start">
-                  بسيطة جداً! اذهب إلى صفحة "إنجازاتي" وستجد زر "تحميل الشهادة
-                  بصيغة PDF". هل ترغب برابط مباشر للصفحة؟
+                  <span>مرحباً! أنا المساعد الذكي، كيف أساعدك؟</span>
                 </div>
               </div>
               <div className="p-3 bg-white border-t border-gray-100">
@@ -1119,32 +1123,7 @@ function AITutorTab({ role }: { role: UserRole }) {
 }
 
 function CodesTab() {
-  const [codes, setCodes] = useState([
-    {
-      id: 1,
-      code: "EDUS-X9M2-K4V",
-      course: "الرياضيات المتقدمة",
-      status: "active",
-      user: "--",
-      type: "كورس",
-    },
-    {
-      id: 2,
-      code: "EDUS-P7L1-Z8B",
-      course: "اشتراك بالمنصة (شهر)",
-      status: "used",
-      user: "أحمد محمود",
-      type: "اشتراك",
-    },
-    {
-      id: 3,
-      code: "EDUS-A4C9-F2N",
-      course: "شحن رصيد - 50$",
-      status: "active",
-      user: "--",
-      type: "رصيد",
-    },
-  ]);
+  const [codes, setCodes] = useState<any[]>([]);
 
   const generateCode = (courseName: string, type: string) => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -1340,11 +1319,21 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
       <div className="bg-white rounded-[2rem] p-4 sm:p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto">
         <div className="aspect-video bg-[#1a1d24] rounded-2xl overflow-hidden mb-8 relative flex flex-col justify-between p-5">
           {freeCourse && freeCourse.videoUrl ? (
-            <video
-              src={freeCourse.videoUrl}
-              controls
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+            getYoutubeVideoInfo(freeCourse.videoUrl).isYoutube ? (
+              <iframe 
+                src={getYoutubeVideoInfo(freeCourse.videoUrl).embedUrl} 
+                title={freeCourse.title} 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+                className="absolute inset-0 w-full h-full border-0"
+              />
+            ) : (
+              <video
+                src={freeCourse.videoUrl}
+                controls
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )
           ) : (
             <>
               <div className="flex-1 flex items-center justify-center">
@@ -1503,34 +1492,14 @@ function CertificatesTab() {
       exit={{ opacity: 0, y: -10 }}
     >
       <h1 className="text-2xl font-bold text-gray-900 mb-6">شهاداتي</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all">
-          <div className="h-40 bg-gradient-to-br from-green-50 to-emerald-100 p-6 flex flex-col items-center justify-center relative">
-            <Award className="w-16 h-16 text-emerald-600 mb-2" />
-            <span className="absolute top-4 right-4 bg-white/60 text-xs font-bold px-2 py-1 rounded text-emerald-800">
-              موثقة
-            </span>
-          </div>
-          <div className="p-5 text-center">
-            <h3 className="font-bold text-gray-900 text-lg mb-1">
-              أساسيات البرمجة
-            </h3>
-            <p className="text-sm text-gray-500 mb-4">
-              تاريخ الإصدار: 20 مايو 2026
-            </p>
-            <button className="w-full bg-gray-900 text-white font-medium py-2 rounded-lg hover:bg-gray-800 transition-colors">
-              تحميل PDF
-            </button>
-          </div>
-        </div>
-
-        <div className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center p-8 text-center text-gray-400">
-          <FileCheck className="w-12 h-12 mb-4 text-gray-300" />
-          <p className="font-medium text-gray-600 mb-2">
-            أكمل المزيد من الكورسات
+      <div className="grid grid-cols-1 gap-6">
+        <div className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center p-12 text-center text-gray-400">
+          <FileCheck className="w-16 h-16 mb-4 text-gray-300" />
+          <p className="font-bold text-lg text-gray-600 mb-2">
+            لا توجد شهادات متاحة حالياً
           </p>
           <p className="text-sm">
-            اجتز الاختبارات بنجاح لتحصل على شهاداتك هنا.
+            أكمل الكورسات واجتز الاختبارات بنجاح لتحصل على شهاداتك هنا.
           </p>
         </div>
       </div>
@@ -1604,10 +1573,18 @@ function MyCoursesTab() {
             >
               <div className="h-40 bg-gradient-to-br from-gray-100 to-primary-50 relative overflow-hidden flex items-center justify-center text-gray-400 group-hover:text-primary-400 transition-colors">
                 {course.videoUrl ? (
-                  <video
-                    src={course.videoUrl}
-                    className="absolute inset-0 w-full h-full object-cover opacity-50"
-                  />
+                   getYoutubeVideoInfo(course.videoUrl).isYoutube ? (
+                     <img 
+                       src={getYoutubeVideoInfo(course.videoUrl).thumbnailUrl} 
+                       alt={course.title}
+                       className="absolute inset-0 w-full h-full object-cover opacity-80"
+                     />
+                   ) : (
+                     <video
+                       src={course.videoUrl}
+                       className="absolute inset-0 w-full h-full object-cover opacity-50"
+                     />
+                   )
                 ) : (
                   <ImageIcon className="w-12 h-12" />
                 )}
@@ -1649,6 +1626,26 @@ function CoursePlayerView({
     "content" | "attachments" | "discussion"
   >("content");
 
+  let videoEmbedUrl = course.videoUrl;
+  let isYoutube = false;
+  if (videoEmbedUrl) {
+    if (videoEmbedUrl.includes("youtube.com/watch?v=")) {
+      videoEmbedUrl = videoEmbedUrl.replace(
+        "youtube.com/watch?v=",
+        "youtube.com/embed/",
+      );
+      videoEmbedUrl = videoEmbedUrl.split("&")[0];
+      isYoutube = true;
+    } else if (videoEmbedUrl.includes("youtu.be/")) {
+      videoEmbedUrl = videoEmbedUrl.replace(
+        "youtu.be/",
+        "www.youtube.com/embed/",
+      );
+      videoEmbedUrl = videoEmbedUrl.split("?")[0];
+      isYoutube = true;
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -1663,30 +1660,41 @@ function CoursePlayerView({
           <ArrowRight className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {course.currentLesson}
-          </h1>
-          <p className="text-gray-500 text-sm">{course.title}</p>
+          <h1 className="text-2xl font-bold text-gray-900">{course.title}</h1>
+          <p className="text-gray-500 text-sm">
+            {course.instructor || "أستاذ المادة"}
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Video Player */}
-          <div className="bg-black rounded-2xl overflow-hidden shadow-lg aspect-video relative group">
-            {/* Mock Video UI */}
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-900/40">
-              <button className="w-16 h-16 bg-primary-600 hover:bg-primary-500 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110">
-                <Play className="w-8 h-8 ml-1" />
-              </button>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-2 bg-gray-700/50">
-              <div
-                className="h-full bg-primary-500"
-                style={{ width: "45%" }}
-              ></div>
-            </div>
-            <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-2">
+          <div className="bg-black rounded-2xl overflow-hidden shadow-lg aspect-video relative group flex items-center justify-center">
+            {videoEmbedUrl ? (
+              isYoutube ? (
+                <iframe
+                  src={videoEmbedUrl}
+                  title={course.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full border-0 absolute inset-0"
+                />
+              ) : (
+                <video
+                  src={videoEmbedUrl}
+                  controls
+                  className="w-full h-full object-cover absolute inset-0"
+                />
+              )
+            ) : (
+              <div className="text-gray-500 flex flex-col items-center">
+                <Video className="w-12 h-12 mb-2 opacity-50" />
+                <p>لا يوجد فيديو متاح</p>
+              </div>
+            )}
+
+            <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-2 pointer-events-none">
               <Video className="w-4 h-4 text-primary-400" />
               محمي ومشفر
             </div>
@@ -1705,7 +1713,7 @@ function CoursePlayerView({
                 onClick={() => setActiveTab("attachments")}
                 className={`flex-1 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === "attachments" ? "border-primary-600 text-primary-600" : "border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-700"}`}
               >
-                <FileIcon className="w-4 h-4" /> الملحقات (2)
+                <FileIcon className="w-4 h-4" /> الملحقات (0)
               </button>
               <button
                 onClick={() => setActiveTab("discussion")}
@@ -1717,58 +1725,14 @@ function CoursePlayerView({
 
             <div className="p-6">
               {activeTab === "content" && (
-                <div className="prose prose-sm max-w-none text-gray-600">
-                  <p>
-                    في هذا الدرس سنتعرف على كيفية استخدام الدوال والوحدات في
-                    بايثون لتنظيم الكود وإعادة استخدامه.
-                  </p>
-                  <h4 className="mt-4 text-gray-900 font-bold mb-2">
-                    أهداف الدرس:
-                  </h4>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>
-                      تعريف الدالة باستخدام <code>def</code>
-                    </li>
-                    <li>تمرير المعاملات (Parameters)</li>
-                    <li>إرجاع القيم (Return Values)</li>
-                    <li>استيراد الوحدات الجاهزة وتصنيع وحدات خاصة</li>
-                  </ul>
+                <div className="prose prose-sm max-w-none text-gray-600 whitespace-pre-wrap">
+                  {course.description || "لا يوجد وصف لهذا الدرس."}
                 </div>
               )}
               {activeTab === "attachments" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-red-100 text-red-600 p-2 rounded-lg">
-                        <FileIcon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900 text-sm">
-                          مذكرة الدوال (PDF)
-                        </h4>
-                        <p className="text-xs text-gray-500">1.2 MB</p>
-                      </div>
-                    </div>
-                    <button className="text-gray-500 hover:bg-gray-200 p-2 rounded-lg transition-colors">
-                      <Download className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900 text-sm">
-                          الأكواد المصدرية (ZIP)
-                        </h4>
-                        <p className="text-xs text-gray-500">450 KB</p>
-                      </div>
-                    </div>
-                    <button className="text-gray-500 hover:bg-gray-200 p-2 rounded-lg transition-colors">
-                      <Download className="w-5 h-5" />
-                    </button>
-                  </div>
+                <div className="text-center py-8 text-gray-500">
+                  <FileIcon className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>لا توجد ملحقات متوفرة حالياً</p>
                 </div>
               )}
               {activeTab === "discussion" && (
@@ -1790,69 +1754,53 @@ function CoursePlayerView({
         </div>
 
         <div className="space-y-6">
-          {/* Course Progress */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-4">
-              كورس: {course.title}
-            </h3>
-            <div className="flex justify-between text-xs text-gray-500 mb-2 font-medium">
-              <span>مكتمل {course.progress}%</span>
-            </div>
-            <div className="w-full bg-gray-100 rounded-full h-2 mb-6">
-              <div
-                className="bg-primary-500 h-2 rounded-full"
-                style={{ width: `${course.progress}%` }}
-              ></div>
-            </div>
-
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+            <h3 className="font-bold text-gray-900 mb-4">معلومات الكورس</h3>
             <div className="space-y-3">
-              <div className="font-bold text-gray-900 mb-3 text-sm">
-                محتوى الكورس
+              <div className="flex items-center justify-between text-sm text-gray-600 py-2 border-b border-gray-50">
+                <div className="flex items-center gap-2 bg-primary-50 text-primary-600 px-2 py-1 rounded-md mb-2 w-fit">
+                  <span className="font-bold text-xs">
+                    {course.type || "فيديو مسجل"}
+                  </span>
+                </div>
               </div>
-              {[
-                {
-                  title: "المتغيرات وأنواع البيانات",
-                  duration: "12:45",
-                  completed: true,
-                },
-                {
-                  title: "الجمل الشرطية وحلقات التكرار",
-                  duration: "18:20",
-                  completed: true,
-                },
-                {
-                  title: "الدوال والوحدات في بايثون",
-                  duration: "24:10",
-                  active: true,
-                },
-                { title: "التعامل مع الملفات", duration: "15:30" },
-                { title: "مقدمة في البرمجة الكائنية", duration: "28:00" },
-              ].map((lesson, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-start gap-3 p-3 rounded-xl transition-colors cursor-pointer ${lesson.active ? "bg-primary-50 border border-primary-100" : "hover:bg-gray-50 border border-transparent"}`}
-                >
-                  <div className="shrink-0 mt-0.5">
-                    {lesson.completed ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    ) : lesson.active ? (
-                      <PlayCircle className="w-5 h-5 text-primary-600" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300"></div>
-                    )}
+              {course.duration && (
+                <div className="flex items-center gap-3 text-sm text-gray-600 py-2 border-b border-gray-50">
+                  <Clock className="w-4 h-4 text-primary-500" />
+                  <span>المدة: {course.duration}</span>
+                </div>
+              )}
+              {course.price && (
+                <div className="flex items-center gap-3 text-sm text-gray-600 py-2 border-b border-gray-50">
+                  <Award className="w-4 h-4 text-primary-500" />
+                  <span>السعر: {course.price}</span>
+                </div>
+              )}
+              {course.students !== undefined && (
+                <div className="flex items-center gap-3 text-sm text-gray-600 py-2 border-b border-gray-50">
+                  <User className="w-4 h-4 text-primary-500" />
+                  <span>عدد الطلاب: {course.students}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="font-bold text-gray-900 mb-4">محتوى الكورس</h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 rounded-xl transition-colors cursor-pointer bg-primary-50 border border-primary-100">
+                <div className="shrink-0 mt-0.5">
+                  <PlayCircle className="w-5 h-5 text-primary-600" />
+                </div>
+                <div>
+                  <div className="font-bold text-sm text-primary-900">
+                    {course.title}
                   </div>
-                  <div>
-                    <div
-                      className={`font-bold text-sm ${lesson.active ? "text-primary-900" : "text-gray-700"}`}
-                    >
-                      {lesson.title}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {lesson.duration}
-                    </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {course.duration || "غير محدد"}
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>
@@ -2034,60 +1982,9 @@ function StudentsTab() {
           إضافة طالب
         </button>
       </div>
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex items-center gap-4">
-          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex-1 max-w-md">
-            <Search className="w-4 h-4 text-gray-400 mr-2" />
-            <input
-              type="text"
-              placeholder="ابحث باسم الطالب أو البريد..."
-              className="bg-transparent border-none outline-none text-sm w-full"
-            />
-          </div>
-          <button className="text-gray-600 bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-100">
-            تصفية
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-sm">
-            <thead className="bg-gray-50 text-gray-500 font-medium">
-              <tr>
-                <th className="p-4">اسم الطالب</th>
-                <th className="p-4">البريد الإلكتروني</th>
-                <th className="p-4">تاريخ الانضمام</th>
-                <th className="p-4 text-center">الاشتراك</th>
-                <th className="p-4 text-center">الحالة</th>
-                <th className="p-4"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-700">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="p-4 font-bold text-gray-900">محمد علي {i}</td>
-                  <td className="p-4" dir="ltr">
-                    student{i}@example.com
-                  </td>
-                  <td className="p-4">2023-10-{15 + i}</td>
-                  <td className="p-4 text-center">
-                    <span className="bg-primary-50 text-primary-600 px-2 py-1 rounded text-xs font-bold border border-primary-100">
-                      باقة VIP
-                    </span>
-                  </td>
-                  <td className="p-4 text-center">
-                    <span className="bg-green-50 text-green-600 px-2 py-1 rounded text-xs font-bold">
-                      نشط
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <button className="text-gray-400 hover:text-primary-600 p-1.5 hover:bg-primary-50 rounded-lg transition-colors">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-center py-12 text-gray-500">
+         <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+         <p>لا يوجد طلاب مسجلون بعد.</p>
       </div>
     </motion.div>
   );
@@ -2109,14 +2006,14 @@ function ReportsTab() {
             <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
               <Users className="w-6 h-6" />
             </div>
-            <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md">
-              +15% هذا الشهر
+            <span className="text-sm font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+              0% هذا الشهر
             </span>
           </div>
           <h3 className="text-gray-500 font-medium text-sm mb-1">
             إجمالي الاشتراكات
           </h3>
-          <div className="text-3xl font-black text-gray-900">2,450</div>
+          <div className="text-3xl font-black text-gray-900">0</div>
         </div>
 
         <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
@@ -2124,14 +2021,14 @@ function ReportsTab() {
             <div className="bg-purple-50 p-3 rounded-xl text-purple-600">
               <PlayCircle className="w-6 h-6" />
             </div>
-            <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md">
-              +8% هذا الشهر
+            <span className="text-sm font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+              0% هذا الشهر
             </span>
           </div>
           <h3 className="text-gray-500 font-medium text-sm mb-1">
             جلسات المشاهدة
           </h3>
-          <div className="text-3xl font-black text-gray-900">12,840</div>
+          <div className="text-3xl font-black text-gray-900">0</div>
         </div>
 
         <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
@@ -2139,14 +2036,14 @@ function ReportsTab() {
             <div className="bg-amber-50 p-3 rounded-xl text-amber-600">
               <Ticket className="w-6 h-6" />
             </div>
-            <span className="text-sm font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">
-              -2% هذا الشهر
+            <span className="text-sm font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+              0% هذا الشهر
             </span>
           </div>
           <h3 className="text-gray-500 font-medium text-sm mb-1">
             الأكواد المستخدمة
           </h3>
-          <div className="text-3xl font-black text-gray-900">845</div>
+          <div className="text-3xl font-black text-gray-900">0</div>
         </div>
       </div>
 
