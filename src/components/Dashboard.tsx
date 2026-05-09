@@ -1144,27 +1144,53 @@ function AITutorTab({ role }: { role: UserRole }) {
 
 function CodesTab() {
   const [codes, setCodes] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [selectedCourseRef, setSelectedCourseRef] = useState("");
 
-  const generateCode = (courseName: string, type: string) => {
+  useEffect(() => {
+    Promise.all([api.getCodes(), api.getCourses()])
+      .then(([codesData, coursesData]) => {
+        setCodes(codesData);
+        setCourses(coursesData);
+        if (coursesData.length > 0) setSelectedCourseRef(coursesData[0].id);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load codes:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  const generateCode = async () => {
+    const selectedCourse = courses.find((c) => c.id === selectedCourseRef);
+    if (!selectedCourse) return alert("الرجاء اختيار الكورس");
+
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let newStr = "EDUS-";
-    for (let i = 0; i < 4; i++)
-      newStr += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < 4; i++) newStr += chars.charAt(Math.floor(Math.random() * chars.length));
     newStr += "-";
-    for (let i = 0; i < 4; i++)
-      newStr += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < 4; i++) newStr += chars.charAt(Math.floor(Math.random() * chars.length));
 
-    setCodes([
-      {
-        id: Date.now(),
+    setGenerating(true);
+    try {
+      const codeData = {
         code: newStr,
-        course: courseName,
-        status: "active",
-        user: "--",
-        type,
-      },
-      ...codes,
-    ]);
+        courseId: selectedCourse.id,
+        courseName: selectedCourse.title,
+        status: "active" as const,
+        type: "كورس",
+      };
+      
+      const newCode = await api.addCode(codeData);
+      setCodes([{ id: newCode.id, ...codeData, createdAt: new Date() }, ...codes]);
+    } catch (err) {
+      console.error(err);
+      alert("حدث خطأ أثناء توليد الكود");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -1172,13 +1198,17 @@ function CodesTab() {
     alert("تم نسخ الكود: " + text);
   };
 
+  if (loading) {
+     return <div className="flex justify-center py-12"><div className="w-8 h-8 rounded-full border-4 border-primary-200 border-t-primary-600 animate-spin"></div></div>;
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
     >
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             إدارة أكواد التفعيل
@@ -1187,20 +1217,31 @@ function CodesTab() {
             توليد أكواد الاشتراك بالمنصة أو بيع الكورسات
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 bg-white p-3 rounded-xl border border-gray-200 items-end shadow-sm">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">الكورس للطالب</label>
+            <select 
+               value={selectedCourseRef}
+               onChange={(e) => setSelectedCourseRef(e.target.value)}
+               className="border border-gray-200 rounded-lg p-2 text-sm focus:border-primary-500 outline-none w-48"
+            >
+               {courses.length === 0 && <option disabled value="">لا يوجد كورسات</option>}
+               {courses.map(course => (
+                  <option key={course.id} value={course.id}>{course.title}</option>
+               ))}
+            </select>
+          </div>
           <button
-            onClick={() => generateCode("اشتراك بالمنصة (شهر)", "اشتراك")}
-            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors text-sm"
+            onClick={generateCode}
+            disabled={generating || courses.length === 0}
+            className="bg-primary-600 disabled:bg-gray-400 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-colors text-sm"
           >
-            <Plus className="w-4 h-4" />
-            توليد كود اشتراك
-          </button>
-          <button
-            onClick={() => generateCode("عام", "كورس")}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-colors text-sm border border-gray-200"
-          >
-            <Plus className="w-4 h-4" />
-            توليد كود كورس
+            {generating ? (
+              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            توليد كود كورس جديد
           </button>
         </div>
       </div>
@@ -1219,7 +1260,9 @@ function CodesTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {codes.map((item) => (
+              {codes.length === 0 ? (
+                 <tr><td colSpan={6} className="text-center py-6 text-gray-500">لا يوجد أكواد مولدة بعد</td></tr>
+              ) : codes.map((item) => (
                 <tr
                   key={item.id}
                   className="hover:bg-gray-50/50 transition-colors"
@@ -1229,12 +1272,12 @@ function CodesTab() {
                   </td>
                   <td className="px-6 py-4 text-xs font-medium">
                     <span
-                      className={`px-2 py-1 rounded inline-block ${item.type === "اشتراك" ? "bg-indigo-100 text-indigo-700" : "bg-blue-100 text-blue-700"}`}
+                      className={`px-2 py-1 rounded inline-block bg-blue-100 text-blue-700`}
                     >
                       {item.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{item.course}</td>
+                  <td className="px-6 py-4 text-gray-600">{item.courseName}</td>
                   <td className="px-6 py-4">
                     {item.status === "active" ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-green-50 text-green-700 border border-green-100">
@@ -1246,7 +1289,9 @@ function CodesTab() {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{item.user}</td>
+                  <td className="px-6 py-4 text-gray-800 font-medium">
+                     {item.status === "used" && item.usedBy ? item.usedBy : "--"}
+                  </td>
                   <td className="px-6 py-4 text-left">
                     <button
                       onClick={() => copyToClipboard(item.code)}
@@ -1312,13 +1357,31 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
       });
   }, []);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.code.trim()) {
       alert("يرجى إدخال كود التفعيل المستلم من الإدارة");
       return;
     }
-    if (onSignup) onSignup();
+    try {
+       const codeData = await api.verifyCode(formData.code.trim().toUpperCase());
+       if (!codeData) {
+          alert("الكود غير صحيح أو أنه تم استخدامه مسبقاً.");
+          return;
+       }
+       await api.markCodeAsUsed(codeData.id, formData.name);
+       
+       const activeCodes = JSON.parse(localStorage.getItem('my_codes') || '[]');
+       if (!activeCodes.find((c: any) => c.code === codeData.code)) {
+         activeCodes.push(codeData);
+         localStorage.setItem('my_codes', JSON.stringify(activeCodes));
+       }
+       
+       if (onSignup) onSignup();
+    } catch(err) {
+       console.error(err);
+       alert("حدث خطأ أثناء الاتصال بالخادم");
+    }
   };
 
   if (loading) {
@@ -1536,7 +1599,15 @@ function MyCoursesTab() {
     api
       .getCourses()
       .then((data) => {
-        setCourses(data);
+        // Filter out courses based on what the student bought
+        const activeCodes = JSON.parse(localStorage.getItem('my_codes') || '[]');
+        if (activeCodes.length > 0) {
+           const myCourseIds = activeCodes.map((c: any) => c.courseId);
+           const myCourses = data.filter(c => myCourseIds.includes(c.id));
+           setCourses(myCourses);
+        } else {
+           setCourses([]);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -1989,6 +2060,22 @@ function StatCard({
 }
 
 function StudentsTab() {
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getCodes()
+      .then((codesData) => {
+        const usedCodes = codesData.filter(c => c.status === 'used');
+        setStudents(usedCodes);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -1997,15 +2084,43 @@ function StudentsTab() {
     >
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">إدارة الطلاب</h1>
-        <button className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors">
-          <Plus className="w-5 h-5" />
-          إضافة طالب
-        </button>
       </div>
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-center py-12 text-gray-500">
-         <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-         <p>لا يوجد طلاب مسجلون بعد.</p>
-      </div>
+      
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="w-8 h-8 rounded-full border-4 border-primary-200 border-t-primary-600 animate-spin"></div>
+        </div>
+      ) : students.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-center py-12 text-gray-500">
+           <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+           <p>لا يوجد طلاب مسجلون بعد.</p>
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <table className="w-full text-right text-sm">
+            <thead className="bg-gray-50 border-b border-gray-100 text-gray-600 text-sm">
+              <tr>
+                <th className="px-6 py-4 font-bold">اسم الطالب</th>
+                <th className="px-6 py-4 font-bold">الكورس</th>
+                <th className="px-6 py-4 font-bold">كود التفعيل</th>
+                <th className="px-6 py-4 font-bold">تاريخ التسجيل</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {students.map((student, i) => (
+                <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-6 py-4 font-bold text-gray-900">{student.usedBy}</td>
+                  <td className="px-6 py-4 text-primary-600 font-medium">{student.courseName}</td>
+                  <td className="px-6 py-4 font-mono text-gray-500">{student.code}</td>
+                  <td className="px-6 py-4 text-gray-500">
+                    {student.usedAt ? new Date(student.usedAt?.seconds * 1000).toLocaleDateString("ar-SA") : "حديث"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </motion.div>
   );
 }

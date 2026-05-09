@@ -33,5 +33,9 @@ service cloud.firestore {
       allow update: if true;
       allow delete: if true;
     }
+
+    match /codes/{codeId} {
+      allow read, write: if true; // Demo: allows all for simplicity
+    }
   }
 }

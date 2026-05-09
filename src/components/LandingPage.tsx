@@ -2,25 +2,51 @@ import { motion, AnimatePresence } from 'motion/react';
 import { BookOpen, Video, Award, BrainCircuit, BarChart3, Users, Settings, ShieldCheck, Globe, MessageCircle, ArrowRight, Ticket, X, CheckCircle2, UserCircle, LogIn } from 'lucide-react';
 import { useState } from 'react';
 import { UserRole } from '../App';
+import { api } from '../services/api';
 
 export default function LandingPage({ onLogin, onGoBack, showBackBtn }: { onLogin: (role: UserRole) => void, onGoBack?: () => void, showBackBtn?: boolean }) {
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [activationCode, setActivationCode] = useState('');
+  const [studentName, setStudentName] = useState('');
   const [activationStatus, setActivationStatus] = useState<'idle' | 'loading' | 'success'>('idle');
 
-  const handleActivate = () => {
-    if(!activationCode.trim()) return;
+  const handleActivate = async () => {
+    if(!activationCode.trim() || !studentName.trim()) {
+      alert("الرجاء إدخال اسمك وكود التفعيل");
+      return;
+    }
     setActivationStatus('loading');
-    setTimeout(() => {
-       setActivationStatus('success');
-       setTimeout(() => {
+    try {
+      const codeData = await api.verifyCode(activationCode);
+      if (!codeData) {
+        alert("الكود غير صحيح أو أنه تم استخدامه مسبقاً.");
+        setActivationStatus('idle');
+        return;
+      }
+
+      await api.markCodeAsUsed(codeData.id, studentName);
+
+      setActivationStatus('success');
+      
+      const activeCodes = JSON.parse(localStorage.getItem('my_codes') || '[]');
+      if (!activeCodes.find((c: any) => c.code === codeData.code)) {
+        activeCodes.push(codeData);
+        localStorage.setItem('my_codes', JSON.stringify(activeCodes));
+      }
+      
+      setTimeout(() => {
           setActivationStatus('idle');
           setShowCodeModal(false);
           setActivationCode('');
-          onLogin('student'); // Redirect to platform after successful activation
-       }, 2000);
-    }, 1500);
+          setStudentName('');
+          onLogin('student');
+      }, 2000);
+    } catch(err) {
+      console.error(err);
+      alert("حدث خطأ أثناء الاتصال بالخادم");
+      setActivationStatus('idle');
+    }
   };
 
   return (
@@ -258,8 +284,18 @@ export default function LandingPage({ onLogin, onGoBack, showBackBtn }: { onLogi
                      </div>
                      <div className="p-6">
                         <p className="text-gray-600 text-sm mb-6 leading-relaxed">
-                           يرجى إدخال كود التفعيل المكون من 12 حرف ورقم والذي حصلت عليه، ليتم إضافة الكورس أو الرصيد إلى حسابك فوراً.
+                           يرجى إدخال اسمك وكود التفعيل المكون من 12 حرف ورقم والذي حصلت عليه، ليتم إضافة الكورس أو الرصيد إلى حسابك فوراً.
                         </p>
+                        <div className="mb-4">
+                           <label className="block text-sm font-bold text-gray-700 mb-2">اسمك الكامل</label>
+                           <input 
+                              type="text" 
+                              value={studentName}
+                              onChange={(e) => setStudentName(e.target.value)}
+                              placeholder="أحمد محمد" 
+                              className="w-full border-2 border-gray-200 rounded-xl p-3.5 bg-gray-50/50 outline-none focus:border-primary-500 focus:bg-white transition-all text-sm font-medium"
+                           />
+                        </div>
                         <div className="mb-6">
                            <label className="block text-sm font-bold text-gray-700 mb-2">كود التفعيل</label>
                            <input 
@@ -273,7 +309,7 @@ export default function LandingPage({ onLogin, onGoBack, showBackBtn }: { onLogi
                         </div>
                         <button 
                            onClick={handleActivate}
-                           disabled={activationStatus === 'loading' || !activationCode.trim()}
+                           disabled={activationStatus === 'loading' || !activationCode.trim() || !studentName.trim()}
                            className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
                         >
                            {activationStatus === 'loading' ? (
