@@ -61,7 +61,6 @@ function getYoutubeVideoInfo(url?: string): { isYoutube: boolean; embedUrl?: str
 type Tab =
   | "overview"
   | "courses"
-  | "quizzes"
   | "ai-tutor"
   | "codes"
   | "my-courses"
@@ -160,12 +159,6 @@ export default function Dashboard({
                 label="الكورسات"
                 active={activeTab === "courses"}
                 onClick={() => pushTab("courses")}
-              />
-              <NavItem
-                icon={<FileCheck />}
-                label="الاختبارات الذكية"
-                active={activeTab === "quizzes"}
-                onClick={() => pushTab("quizzes")}
               />
               <NavItem
                 icon={<Ticket />}
@@ -301,7 +294,6 @@ export default function Dashboard({
           <AnimatePresence mode="wait">
             {activeTab === "overview" && <OverviewTab key="overview" />}
             {activeTab === "courses" && <CoursesTab key="courses" />}
-            {activeTab === "quizzes" && <QuizzesTab key="quizzes" />}
             {activeTab === "codes" && <CodesTab key="codes" />}
             {activeTab === "ai-tutor" && (
               <AITutorTab key="ai-tutor" role={role} />
@@ -330,12 +322,13 @@ export default function Dashboard({
 
 function OverviewTab() {
   const [courses, setCourses] = useState<any[]>([]);
+  const [studentsCount, setStudentsCount] = useState(0);
 
   useEffect(() => {
-    api
-      .getCourses()
-      .then((data) => {
-        setCourses(data);
+    Promise.all([api.getCourses(), api.getCodes()])
+      .then(([coursesData, codesData]) => {
+        setCourses(coursesData);
+        setStudentsCount(codesData.filter(c => c.status === 'used').length);
       })
       .catch(console.error);
   }, []);
@@ -353,8 +346,8 @@ function OverviewTab() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <StatCard
           title="إجمالي الطلاب"
-          value="1,248"
-          trend="+12%"
+          value={studentsCount.toString()}
+          trend="مسجل"
           icon={<Users />}
           color="blue"
         />
@@ -367,15 +360,15 @@ function OverviewTab() {
         />
         <StatCard
           title="الاختبارات المصححة"
-          value="450"
+          value="0"
           trend="آلياً"
           icon={<CheckCircle2 />}
           color="green"
         />
         <StatCard
           title="الزيارات اليومية"
-          value="8.5k"
-          trend="+5%"
+          value="0"
+          trend="اليوم"
           icon={<BarChart3 />}
           color="amber"
         />
@@ -440,18 +433,15 @@ function OverviewTab() {
             نشاط الذكاء الاصطناعي
           </h2>
           <div className="flex-1 flex items-center justify-center flex-col text-center space-y-4">
-            <div className="w-24 h-24 rounded-full border-4 border-primary-100 flex items-center justify-center border-t-primary-500 animate-[spin_3s_linear_infinite]">
-              <span
-                className="font-bold text-xl text-primary-600 rotate-0"
-                style={{ animation: "spin 3s linear infinite reverse" }}
-              >
-                150
+            <div className="w-24 h-24 rounded-full border-4 border-gray-100 flex items-center justify-center border-t-primary-500">
+              <span className="font-bold text-xl text-primary-600">
+                0
               </span>
             </div>
             <div>
               <p className="font-bold text-gray-900">سؤال مجاب آلياً</p>
               <p className="text-sm text-gray-500">
-                خلال آخر 24 ساعة عبر الشات بوت
+                لم يتم إجابة أي أسئلة بعد
               </p>
             </div>
           </div>
@@ -928,95 +918,6 @@ function AddCourseView({
   );
 }
 
-function QuizzesTab() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-    >
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center gap-3 text-primary-600 mb-6">
-            <BrainCircuit className="w-6 h-6" />
-            <h2 className="text-xl font-bold text-gray-900">
-              توليد اختبار بالذكاء الاصطناعي
-            </h2>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                حدد الدرس أو ألصق النص
-              </label>
-              <textarea
-                rows={4}
-                className="w-full border border-gray-200 rounded-xl p-3 bg-gray-50 text-sm focus:border-primary-500 outline-none transition-colors"
-                placeholder="مثال: قم بإنشاء 5 أسئلة اختيار من متعدد عن الثورة الصناعية..."
-              ></textarea>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  نوع الأسئلة
-                </label>
-                <select className="w-full border border-gray-200 rounded-xl p-3 bg-gray-50 text-sm outline-none">
-                  <option>اختيار من متعدد</option>
-                  <option>صح وخطأ</option>
-                  <option>مقالي (تصحيح آلي)</option>
-                  <option>متنوع</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  عدد الأسئلة
-                </label>
-                <input
-                  type="number"
-                  defaultValue={10}
-                  className="w-full border border-gray-200 rounded-xl p-3 bg-gray-50 text-sm outline-none"
-                />
-              </div>
-            </div>
-            <button className="w-full bg-gray-900 text-white font-medium py-3 rounded-xl hover:bg-gray-800 transition-colors flex justify-center items-center gap-2">
-              <BrainCircuit className="w-5 h-5" />
-              توليد الاختبار الآن
-            </button>
-          </div>
-        </div>
-
-        <div className="w-full lg:w-96 space-y-4">
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-4">
-              اختبارات تحتاج مراجعة
-            </h3>
-            <div className="space-y-3">
-              <div className="p-4 text-center text-gray-500 text-sm border-2 border-dashed border-gray-200 rounded-xl">
-                لا يوجد اختبارات تحتاج للمراجعة حالياً.
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-            <div className="relative z-10">
-              <Award className="w-8 h-8 mb-3 opacity-90" />
-              <h3 className="font-bold text-lg mb-2">إصدار الشهادات</h3>
-              <p className="text-primary-100 text-sm mb-4 leading-relaxed">
-                بمجرد اجتياز الطالب للاختبار، سيتم إصدار شهادة موثقة بـ QR Code
-                تلقائياً.
-              </p>
-              <button className="bg-white text-primary-700 px-4 py-2 rounded-lg text-sm font-bold w-full">
-                تخصيص قالب الشهادة
-              </button>
-            </div>
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
 function AITutorTab({ role }: { role: UserRole }) {
   if (role === "student" || role === "guest") {
     return (
@@ -1399,71 +1300,72 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
       exit={{ opacity: 0, y: -10 }}
       className="pt-2"
     >
-      <div className="bg-white rounded-[2rem] p-4 sm:p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto">
-        <div className="aspect-video bg-[#1a1d24] rounded-2xl overflow-hidden mb-8 relative flex flex-col justify-between p-5">
-          {freeCourse && freeCourse.videoUrl ? (
-            getYoutubeVideoInfo(freeCourse.videoUrl).isYoutube ? (
-              <iframe 
-                src={getYoutubeVideoInfo(freeCourse.videoUrl).embedUrl} 
-                title={freeCourse.title} 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowFullScreen
-                className="absolute inset-0 w-full h-full border-0"
-              />
-            ) : (
-              <video
-                src={freeCourse.videoUrl}
-                controls
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            )
-          ) : (
-            <>
-              <div className="flex-1 flex items-center justify-center">
-                <PlayCircle
-                  className="w-[4.5rem] h-[4.5rem] text-white/90 hover:text-white hover:scale-105 transition-transform cursor-pointer"
-                  strokeWidth={1}
+      <div className="bg-white rounded-[2rem] p-6 lg:p-10 shadow-sm border border-gray-100 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <div className="aspect-video bg-[#1a1d24] rounded-2xl overflow-hidden relative flex flex-col justify-between p-5 w-full">
+            {freeCourse && freeCourse.videoUrl ? (
+              getYoutubeVideoInfo(freeCourse.videoUrl).isYoutube ? (
+                <iframe 
+                  src={getYoutubeVideoInfo(freeCourse.videoUrl).embedUrl} 
+                  title={freeCourse.title} 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full border-0"
                 />
-              </div>
-              <div className="flex justify-between items-center text-white/90 text-sm font-medium w-full mt-auto">
-                <span>فيديو تعريفي مجاني</span>
-                <span dir="ltr">00:00 / 05:30</span>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="text-center mb-8 px-2 sm:px-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-[#111827] mb-4">
-            {freeCourse ? freeCourse.title : "مقدمة عن منصة إديوسمارت"}
-          </h2>
-          <p className="text-gray-500 leading-relaxed text-sm sm:text-base">
-            {freeCourse
-              ? freeCourse.description ||
-                "هذا الفيديو متاح لك كـ ضيف لتتعرف على طريقة الشرح. للاستمتاع بكافة الكورسات والمميزات، يرجى التسجيل."
-              : "هذا الفيديو متاح لك كـ ضيف لتتعرف على مميزات المنصة وطريقة الشرح. للاستمتاع بكافة الكورسات والمميزات وإجراء الاختبارات، يرجى التسجيل أو شراء الكورسات المتاحة."}
-          </p>
-        </div>
-
-        <div className="bg-[#f5f8ff] rounded-2xl p-4 sm:p-6 flex items-stretch gap-4 border border-[#e5edff]">
-          <div className="flex-1 text-right flex flex-col justify-center">
-            <h3 className="font-bold text-gray-900 text-lg sm:text-xl mb-1 sm:mb-2 leading-tight">
-              هل أعجبك
-              <br className="sm:hidden" /> المحتوى؟
-            </h3>
-            <p className="text-sm text-primary-600 font-medium leading-relaxed">
-              انضم إلينا الآن للوصول
-              <br className="sm:hidden" /> إلى كافة الكورسات.
-            </p>
+              ) : (
+                <video
+                  src={freeCourse.videoUrl}
+                  controls
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )
+            ) : (
+              <>
+                <div className="flex-1 flex items-center justify-center">
+                  <PlayCircle
+                    className="w-[4.5rem] h-[4.5rem] text-white/90 hover:text-white hover:scale-105 transition-transform cursor-pointer"
+                    strokeWidth={1}
+                  />
+                </div>
+                <div className="flex justify-between items-center text-white/90 text-sm font-medium w-full mt-auto">
+                  <span>فيديو تعريفي مجاني</span>
+                  <span dir="ltr">00:00 / 05:30</span>
+                </div>
+              </>
+            )}
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-primary-600 hover:bg-primary-700 text-white px-5 sm:px-8 py-4 sm:py-6 rounded-xl font-bold transition-colors w-[110px] sm:w-[140px] shrink-0 text-center shadow-md shadow-primary-500/20 flex flex-col justify-center items-center leading-snug text-base sm:text-lg"
-          >
-            <span>إنشاء</span>
-            <span>حساب</span>
-            <span>طالب</span>
-          </button>
+
+          <div className="flex flex-col space-y-8">
+            <div className="text-right px-2 sm:px-0">
+              <h2 className="text-xl sm:text-3xl font-bold text-[#111827] mb-4 leading-tight">
+                {freeCourse ? freeCourse.title : "مقدمة عن منصة إديوسمارت"}
+              </h2>
+              <p className="text-gray-500 leading-relaxed text-sm sm:text-base">
+                {freeCourse
+                  ? freeCourse.description ||
+                    "هذا الفيديو متاح لك كـ ضيف لتتعرف على طريقة الشرح. للاستمتاع بكافة الكورسات والمميزات، يرجى التسجيل."
+                  : "هذا الفيديو متاح لك كـ ضيف لتتعرف على مميزات المنصة وطريقة الشرح. للاستمتاع بكافة الكورسات والمميزات وإجراء الاختبارات، يرجى التسجيل أو شراء الكورسات المتاحة."}
+              </p>
+            </div>
+
+            <div className="bg-[#f5f8ff] rounded-2xl p-5 sm:p-6 flex items-stretch gap-4 border border-[#e5edff]">
+              <div className="flex-1 text-right flex flex-col justify-center">
+                <h3 className="font-bold text-gray-900 text-lg sm:text-xl mb-2 leading-tight">
+                  هل أعجبك المحتوى؟
+                </h3>
+                <p className="text-sm text-primary-600 font-medium leading-relaxed max-w-[200px]">
+                  انضم إلينا الآن للوصول إلى كافة الكورسات.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowModal(true)}
+                className="bg-primary-600 hover:bg-primary-700 text-white px-5 sm:px-8 py-4 sm:py-6 rounded-xl font-bold transition-colors w-[110px] sm:w-[140px] shrink-0 text-center shadow-md shadow-primary-500/20 flex flex-col justify-center items-center leading-snug text-base sm:text-lg"
+              >
+                <span>إنشاء</span>
+                <span>حساب</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, User, Copy, Check } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
+import Markdown from 'react-markdown';
 
 let aiInstance: GoogleGenAI | null = null;
 const getAI = () => {
@@ -14,6 +15,43 @@ interface Message {
   id: string;
   role: 'user' | 'model';
   text: string;
+}
+
+function CodeBlock({ inline, className, children, ...props }: any) {
+  const match = /language-(\w+)/.exec(className || '');
+  const [copied, setCopied] = useState(false);
+  const code = String(children).replace(/\n$/, '');
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!inline) {
+    return (
+      <div className="relative overflow-hidden rounded-md my-2" dir="ltr">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-gray-800 text-gray-200 text-xs">
+          <span className="font-mono">{match ? match[1] : 'code'}</span>
+          <button onClick={copyToClipboard} className="hover:text-white flex items-center gap-1 transition-colors" title="Copy code">
+            {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+            <span>{copied ? 'Copied!' : 'Copy'}</span>
+          </button>
+        </div>
+        <div className="overflow-x-auto p-3 bg-gray-900 text-gray-100 text-sm">
+          <code className={className} {...props}>
+            {children}
+          </code>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <code className="bg-gray-200 text-gray-800 px-1 py-0.5 rounded text-sm font-mono" {...props}>
+      {children}
+    </code>
+  );
 }
 
 export default function AIChatbot() {
@@ -107,7 +145,20 @@ export default function AIChatbot() {
                   {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
                 </div>
                 <div className={`p-3 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-primary-600 text-white rounded-tl-none' : 'bg-white text-gray-800 rounded-tr-none border border-gray-100'}`}>
-                  {msg.text}
+                  <div className="markdown-body">
+                    <Markdown
+                      components={{
+                        code: CodeBlock,
+                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                        ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2" {...props} />,
+                        ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2" {...props} />,
+                        li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                        a: ({ node, ...props }) => <a className="text-blue-500 hover:underline" {...props} />,
+                      }}
+                    >
+                      {msg.text}
+                    </Markdown>
+                  </div>
                 </div>
               </div>
             </div>
