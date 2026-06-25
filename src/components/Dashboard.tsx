@@ -1267,7 +1267,7 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
     try {
        const codeData = await api.verifyCode(formData.code.trim().toUpperCase());
        if (!codeData) {
-          alert("الكود غير صحيح أو أنه تم استخدامه مسبقاً.");
+          alert("الكود غير صحيح.");
           return;
        }
        await api.markCodeAsUsed(codeData.id, formData.name);

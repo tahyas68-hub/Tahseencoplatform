@@ -20,7 +20,7 @@ export default function LandingPage({ onLogin, onGoBack, showBackBtn }: { onLogi
     try {
       const codeData = await api.verifyCode(activationCode);
       if (!codeData) {
-        alert("الكود غير صحيح أو أنه تم استخدامه مسبقاً.");
+        alert("الكود غير صحيح.");
         setActivationStatus('idle');
         return;
       }

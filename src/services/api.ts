@@ -53,13 +53,19 @@ export const api = {
     return { id: docRef.id };
   },
 
-  async verifyCode(codeStr: string): Promise<AccessCode | null> {
+  async verifyCode(codeStr: string, studentName?: string): Promise<AccessCode | null> {
     const querySnapshot = await getDocs(collection(db, 'codes'));
     let foundCode: AccessCode | null = null;
     querySnapshot.forEach((doc) => {
       const data = doc.data() as AccessCode;
-      if (data.code === codeStr && data.status === 'active') {
-        foundCode = { id: doc.id, ...data };
+      if (data.code === codeStr) {
+        if (data.status === 'active') {
+          foundCode = { id: doc.id, ...data };
+        } else if (data.status === 'used') {
+          // If already used, check if the student name matches, or just allow it if no name provided/enforced strictly
+          // For a simple platform, if they have the code, we allow them to log back in
+          foundCode = { id: doc.id, ...data };
+        }
       }
     });
     return foundCode;
@@ -67,6 +73,17 @@ export const api = {
 
   async markCodeAsUsed(codeId: string, studentEmail: string): Promise<void> {
     const docRef = doc(db, 'codes', codeId);
+    // Fetch the doc first to check if it's already used
+    const docSnap = await getDocs(collection(db, 'codes'));
+    let isUsed = false;
+    docSnap.forEach(d => {
+       if (d.id === codeId) {
+          if (d.data().status === 'used') isUsed = true;
+       }
+    });
+    
+    if (isUsed) return; // Do not overwrite if already used
+    
     await setDoc(docRef, {
       status: 'used',
       usedBy: studentEmail,
