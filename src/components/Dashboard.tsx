@@ -48,12 +48,12 @@ function getYoutubeVideoInfo(url?: string): { isYoutube: boolean; embedUrl?: str
     embedUrl = url.replace("youtube.com/watch?v=", "youtube.com/embed/");
     embedUrl = embedUrl.split("&")[0];
     id = url.split("watch?v=")[1]?.split("&")[0];
-    return { isYoutube: true, embedUrl, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
+    return { isYoutube: true, embedUrl: `${embedUrl}?rel=0&modestbranding=1&showinfo=0&controls=1&iv_load_policy=3`, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
   } else if (url.includes("youtu.be/")) {
     embedUrl = url.replace("youtu.be/", "www.youtube.com/embed/");
     embedUrl = embedUrl.split("?")[0];
     id = url.split("youtu.be/")[1]?.split("?")[0];
-    return { isYoutube: true, embedUrl, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
+    return { isYoutube: true, embedUrl: `${embedUrl}?rel=0&modestbranding=1&showinfo=0&controls=1&iv_load_policy=3`, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
   }
   return { isYoutube: false, embedUrl: url };
 }
@@ -209,20 +209,6 @@ export default function Dashboard({
                 active={activeTab === "ai-tutor"}
                 onClick={() => pushTab("ai-tutor")}
               />
-              <NavItem
-                icon={<Award />}
-                label="الشهادات"
-                active={activeTab === "certificates"}
-                onClick={() => pushTab("certificates")}
-              />
-              <div className="pt-4 mt-4 border-t border-gray-100">
-                <NavItem
-                  icon={<Settings />}
-                  label="إعدادات الحساب"
-                  active={activeTab === "settings"}
-                  onClick={() => pushTab("settings")}
-                />
-              </div>
             </>
           )}
 
@@ -1654,6 +1640,7 @@ function CoursePlayerView({
         "youtube.com/embed/",
       );
       videoEmbedUrl = videoEmbedUrl.split("&")[0];
+      videoEmbedUrl = `${videoEmbedUrl}?rel=0&modestbranding=1&showinfo=0&controls=1&iv_load_policy=3`;
       isYoutube = true;
     } else if (videoEmbedUrl.includes("youtu.be/")) {
       videoEmbedUrl = videoEmbedUrl.replace(
@@ -1661,6 +1648,7 @@ function CoursePlayerView({
         "www.youtube.com/embed/",
       );
       videoEmbedUrl = videoEmbedUrl.split("?")[0];
+      videoEmbedUrl = `${videoEmbedUrl}?rel=0&modestbranding=1&showinfo=0&controls=1&iv_load_policy=3`;
       isYoutube = true;
     }
   }
