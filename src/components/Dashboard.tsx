@@ -39,7 +39,6 @@ import {
 } from "lucide-react";
 import { UserRole } from "../App";
 import { api } from "../services/api";
-import ReactPlayer from "react-player";
 
 function getYoutubeVideoInfo(url?: string): { isYoutube: boolean; embedUrl?: string; thumbnailUrl?: string } {
   if (!url) return { isYoutube: false };
@@ -1292,21 +1291,13 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
           <div className="aspect-video bg-[#1a1d24] rounded-2xl overflow-hidden relative flex flex-col justify-between p-5 w-full">
             {freeCourse && freeCourse.videoUrl ? (
               getYoutubeVideoInfo(freeCourse.videoUrl).isYoutube ? (
-                <div className="absolute inset-0 w-full h-full z-10">
-                  <ReactPlayer
-                    url={freeCourse.videoUrl}
-                    width="100%"
-                    height="100%"
-                    controls={true}
-                    light={true}
-                    playing
-                    config={{
-                      youtube: {
-                        playerVars: { modestbranding: 1, rel: 0, showinfo: 0, iv_load_policy: 3 }
-                      }
-                    }}
-                  />
-                </div>
+                <iframe 
+                  src={getYoutubeVideoInfo(freeCourse.videoUrl).embedUrl} 
+                  title={freeCourse.title} 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full border-0 z-10"
+                />
               ) : (
                 <video
                   src={freeCourse.videoUrl}
@@ -1689,21 +1680,13 @@ function CoursePlayerView({
           <div className="bg-black rounded-2xl overflow-hidden shadow-lg aspect-video relative group flex items-center justify-center">
             {videoEmbedUrl ? (
               isYoutube ? (
-                <div className="w-full h-full absolute inset-0 z-10">
-                  <ReactPlayer
-                    url={course.videoUrl}
-                    width="100%"
-                    height="100%"
-                    controls={true}
-                    light={true}
-                    playing
-                    config={{
-                      youtube: {
-                        playerVars: { modestbranding: 1, rel: 0, showinfo: 0, iv_load_policy: 3 }
-                      }
-                    }}
-                  />
-                </div>
+                <iframe
+                  src={videoEmbedUrl}
+                  title={course.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full border-0 absolute inset-0 z-10"
+                />
               ) : (
                 <video
                   src={videoEmbedUrl}
