@@ -1310,13 +1310,13 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
                   title={freeCourse.title} 
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                   allowFullScreen
-                  className="absolute inset-0 w-full h-full border-0"
+                  className="absolute inset-0 w-full h-full border-0 z-10"
                 />
               ) : (
                 <video
                   src={freeCourse.videoUrl}
                   controls
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-cover z-10"
                 />
               )
             ) : (
@@ -1333,6 +1333,23 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
                 </div>
               </>
             )}
+
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-50">
+              <motion.div
+                className="absolute text-white/40 bg-black/10 px-3 py-1 rounded backdrop-blur-sm text-sm sm:text-lg font-mono font-bold select-none border border-white/5"
+                animate={{
+                  top: ['10%', '80%', '20%', '70%', '10%'],
+                  left: ['10%', '60%', '80%', '20%', '10%'],
+                }}
+                transition={{
+                  duration: 25,
+                  ease: "linear",
+                  repeat: Infinity,
+                }}
+              >
+                GUEST-PREVIEW-MODE
+              </motion.div>
+            </div>
           </div>
 
           <div className="flex flex-col space-y-8">
@@ -1680,13 +1697,13 @@ function CoursePlayerView({
                   title={course.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  className="w-full h-full border-0 absolute inset-0"
+                  className="w-full h-full border-0 absolute inset-0 z-10"
                 />
               ) : (
                 <video
                   src={videoEmbedUrl}
                   controls
-                  className="w-full h-full object-cover absolute inset-0"
+                  className="w-full h-full object-cover absolute inset-0 z-10"
                 />
               )
             ) : (
@@ -1696,24 +1713,22 @@ function CoursePlayerView({
               </div>
             )}
 
-            {studentCode && (
-              <div className="absolute inset-0 pointer-events-none overflow-hidden z-50">
-                <motion.div
-                  className="absolute text-white/40 bg-black/10 px-3 py-1 rounded backdrop-blur-sm text-sm sm:text-lg font-mono font-bold select-none border border-white/5"
-                  animate={{
-                    top: ['10%', '80%', '20%', '70%', '10%'],
-                    left: ['10%', '60%', '80%', '20%', '10%'],
-                  }}
-                  transition={{
-                    duration: 25,
-                    ease: "linear",
-                    repeat: Infinity,
-                  }}
-                >
-                  {studentCode}
-                </motion.div>
-              </div>
-            )}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-50">
+              <motion.div
+                className="absolute text-white/40 bg-black/10 px-3 py-1 rounded backdrop-blur-sm text-sm sm:text-lg font-mono font-bold select-none border border-white/5"
+                animate={{
+                  top: ['10%', '80%', '20%', '70%', '10%'],
+                  left: ['10%', '60%', '80%', '20%', '10%'],
+                }}
+                transition={{
+                  duration: 25,
+                  ease: "linear",
+                  repeat: Infinity,
+                }}
+              >
+                {studentCode || "معاينة الحماية: EDUS-XXXX-XXXX"}
+              </motion.div>
+            </div>
 
             <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-2 pointer-events-none z-40">
               <Video className="w-4 h-4 text-primary-400" />
