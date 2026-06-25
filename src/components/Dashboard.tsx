@@ -1618,6 +1618,15 @@ function CoursePlayerView({
   const [activeTab, setActiveTab] = useState<
     "content" | "attachments" | "discussion"
   >("content");
+  const [studentCode, setStudentCode] = useState<string>("");
+
+  useEffect(() => {
+    const activeCodes = JSON.parse(localStorage.getItem('my_codes') || '[]');
+    const codeRecord = activeCodes.find((c: any) => c.courseId === course.id);
+    if (codeRecord) {
+      setStudentCode(codeRecord.code);
+    }
+  }, [course.id]);
 
   let videoEmbedUrl = course.videoUrl;
   let isYoutube = false;
@@ -1687,7 +1696,26 @@ function CoursePlayerView({
               </div>
             )}
 
-            <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-2 pointer-events-none">
+            {studentCode && (
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-50">
+                <motion.div
+                  className="absolute text-white/40 bg-black/10 px-3 py-1 rounded backdrop-blur-sm text-sm sm:text-lg font-mono font-bold select-none border border-white/5"
+                  animate={{
+                    top: ['10%', '80%', '20%', '70%', '10%'],
+                    left: ['10%', '60%', '80%', '20%', '10%'],
+                  }}
+                  transition={{
+                    duration: 25,
+                    ease: "linear",
+                    repeat: Infinity,
+                  }}
+                >
+                  {studentCode}
+                </motion.div>
+              </div>
+            )}
+
+            <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-2 pointer-events-none z-40">
               <Video className="w-4 h-4 text-primary-400" />
               محمي ومشفر
             </div>
