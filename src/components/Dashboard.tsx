@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { UserRole } from "../App";
 import { api } from "../services/api";
+import ReactPlayer from "react-player";
 
 function getYoutubeVideoInfo(url?: string): { isYoutube: boolean; embedUrl?: string; thumbnailUrl?: string } {
   if (!url) return { isYoutube: false };
@@ -48,12 +49,12 @@ function getYoutubeVideoInfo(url?: string): { isYoutube: boolean; embedUrl?: str
     embedUrl = url.replace("youtube.com/watch?v=", "youtube.com/embed/");
     embedUrl = embedUrl.split("&")[0];
     id = url.split("watch?v=")[1]?.split("&")[0];
-    return { isYoutube: true, embedUrl: `${embedUrl}?rel=0&modestbranding=1&showinfo=0&controls=1&iv_load_policy=3`, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
+    return { isYoutube: true, embedUrl: `${embedUrl}?rel=0&modestbranding=1&showinfo=0&controls=0&iv_load_policy=3&fs=0&disablekb=1`, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
   } else if (url.includes("youtu.be/")) {
     embedUrl = url.replace("youtu.be/", "www.youtube.com/embed/");
     embedUrl = embedUrl.split("?")[0];
     id = url.split("youtu.be/")[1]?.split("?")[0];
-    return { isYoutube: true, embedUrl: `${embedUrl}?rel=0&modestbranding=1&showinfo=0&controls=1&iv_load_policy=3`, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
+    return { isYoutube: true, embedUrl: `${embedUrl}?rel=0&modestbranding=1&showinfo=0&controls=0&iv_load_policy=3&fs=0&disablekb=1`, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
   }
   return { isYoutube: false, embedUrl: url };
 }
@@ -1291,13 +1292,21 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
           <div className="aspect-video bg-[#1a1d24] rounded-2xl overflow-hidden relative flex flex-col justify-between p-5 w-full">
             {freeCourse && freeCourse.videoUrl ? (
               getYoutubeVideoInfo(freeCourse.videoUrl).isYoutube ? (
-                <iframe 
-                  src={getYoutubeVideoInfo(freeCourse.videoUrl).embedUrl} 
-                  title={freeCourse.title} 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full border-0 z-10"
-                />
+                <div className="absolute inset-0 w-full h-full z-10">
+                  <ReactPlayer
+                    url={freeCourse.videoUrl}
+                    width="100%"
+                    height="100%"
+                    controls={true}
+                    light={true}
+                    playing
+                    config={{
+                      youtube: {
+                        playerVars: { modestbranding: 1, rel: 0, showinfo: 0, iv_load_policy: 3 }
+                      }
+                    }}
+                  />
+                </div>
               ) : (
                 <video
                   src={freeCourse.videoUrl}
@@ -1640,7 +1649,7 @@ function CoursePlayerView({
         "youtube.com/embed/",
       );
       videoEmbedUrl = videoEmbedUrl.split("&")[0];
-      videoEmbedUrl = `${videoEmbedUrl}?rel=0&modestbranding=1&showinfo=0&controls=1&iv_load_policy=3`;
+      videoEmbedUrl = `${videoEmbedUrl}?rel=0&modestbranding=1&showinfo=0&controls=0&iv_load_policy=3&fs=0&disablekb=1`;
       isYoutube = true;
     } else if (videoEmbedUrl.includes("youtu.be/")) {
       videoEmbedUrl = videoEmbedUrl.replace(
@@ -1648,7 +1657,7 @@ function CoursePlayerView({
         "www.youtube.com/embed/",
       );
       videoEmbedUrl = videoEmbedUrl.split("?")[0];
-      videoEmbedUrl = `${videoEmbedUrl}?rel=0&modestbranding=1&showinfo=0&controls=1&iv_load_policy=3`;
+      videoEmbedUrl = `${videoEmbedUrl}?rel=0&modestbranding=1&showinfo=0&controls=0&iv_load_policy=3&fs=0&disablekb=1`;
       isYoutube = true;
     }
   }
@@ -1680,13 +1689,21 @@ function CoursePlayerView({
           <div className="bg-black rounded-2xl overflow-hidden shadow-lg aspect-video relative group flex items-center justify-center">
             {videoEmbedUrl ? (
               isYoutube ? (
-                <iframe
-                  src={videoEmbedUrl}
-                  title={course.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full border-0 absolute inset-0 z-10"
-                />
+                <div className="w-full h-full absolute inset-0 z-10">
+                  <ReactPlayer
+                    url={course.videoUrl}
+                    width="100%"
+                    height="100%"
+                    controls={true}
+                    light={true}
+                    playing
+                    config={{
+                      youtube: {
+                        playerVars: { modestbranding: 1, rel: 0, showinfo: 0, iv_load_policy: 3 }
+                      }
+                    }}
+                  />
+                </div>
               ) : (
                 <video
                   src={videoEmbedUrl}
