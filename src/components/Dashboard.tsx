@@ -39,24 +39,9 @@ import {
 } from "lucide-react";
 import { UserRole } from "../App";
 import { api } from "../services/api";
+import CustomVideoPlayer from "./CustomVideoPlayer";
 
-function getYoutubeVideoInfo(url?: string): { isYoutube: boolean; embedUrl?: string; thumbnailUrl?: string } {
-  if (!url) return { isYoutube: false };
-  let embedUrl = url;
-  let id = "";
-  if (url.includes("youtube.com/watch?v=")) {
-    embedUrl = url.replace("youtube.com/watch?v=", "youtube.com/embed/");
-    embedUrl = embedUrl.split("&")[0];
-    id = url.split("watch?v=")[1]?.split("&")[0];
-    return { isYoutube: true, embedUrl: `${embedUrl}?rel=0&modestbranding=1&showinfo=0&controls=0&iv_load_policy=3&fs=0&disablekb=1`, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
-  } else if (url.includes("youtu.be/")) {
-    embedUrl = url.replace("youtu.be/", "www.youtube.com/embed/");
-    embedUrl = embedUrl.split("?")[0];
-    id = url.split("youtu.be/")[1]?.split("?")[0];
-    return { isYoutube: true, embedUrl: `${embedUrl}?rel=0&modestbranding=1&showinfo=0&controls=0&iv_load_policy=3&fs=0&disablekb=1`, thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg` };
-  }
-  return { isYoutube: false, embedUrl: url };
-}
+
 
 type Tab =
   | "overview"
@@ -1288,23 +1273,13 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
     >
       <div className="bg-white rounded-[2rem] p-6 lg:p-10 shadow-sm border border-gray-100 max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-          <div className="aspect-video bg-[#1a1d24] rounded-2xl overflow-hidden relative flex flex-col justify-between p-5 w-full">
+          <div className="aspect-video bg-[#1a1d24] rounded-2xl overflow-hidden relative flex flex-col justify-between w-full p-0">
             {freeCourse && freeCourse.videoUrl ? (
-              getYoutubeVideoInfo(freeCourse.videoUrl).isYoutube ? (
-                <iframe 
-                  src={getYoutubeVideoInfo(freeCourse.videoUrl).embedUrl} 
-                  title={freeCourse.title} 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full border-0 z-10"
-                />
-              ) : (
-                <video
-                  src={freeCourse.videoUrl}
-                  controls
-                  className="absolute inset-0 w-full h-full object-cover z-10"
-                />
-              )
+               <CustomVideoPlayer 
+                  url={freeCourse.videoUrl} 
+                  title={freeCourse.title}
+                  watermarkText="معاينة مجانية"
+               />
             ) : (
               <>
                 <div className="flex-1 flex items-center justify-center">
@@ -1319,23 +1294,6 @@ function FreeVideoTab({ onSignup }: { onSignup?: () => void }) {
                 </div>
               </>
             )}
-
-            <div className="absolute inset-0 pointer-events-none overflow-hidden z-50">
-              <motion.div
-                className="absolute text-white/40 bg-black/10 px-3 py-1 rounded backdrop-blur-sm text-sm sm:text-lg font-mono font-bold select-none border border-white/5"
-                animate={{
-                  top: ['10%', '80%', '20%', '70%', '10%'],
-                  left: ['10%', '60%', '80%', '20%', '10%'],
-                }}
-                transition={{
-                  duration: 25,
-                  ease: "linear",
-                  repeat: Infinity,
-                }}
-              >
-                GUEST-PREVIEW-MODE
-              </motion.div>
-            </div>
           </div>
 
           <div className="flex flex-col space-y-8">
@@ -1632,26 +1590,6 @@ function CoursePlayerView({
   }, [course.id]);
 
   let videoEmbedUrl = course.videoUrl;
-  let isYoutube = false;
-  if (videoEmbedUrl) {
-    if (videoEmbedUrl.includes("youtube.com/watch?v=")) {
-      videoEmbedUrl = videoEmbedUrl.replace(
-        "youtube.com/watch?v=",
-        "youtube.com/embed/",
-      );
-      videoEmbedUrl = videoEmbedUrl.split("&")[0];
-      videoEmbedUrl = `${videoEmbedUrl}?rel=0&modestbranding=1&showinfo=0&controls=0&iv_load_policy=3&fs=0&disablekb=1`;
-      isYoutube = true;
-    } else if (videoEmbedUrl.includes("youtu.be/")) {
-      videoEmbedUrl = videoEmbedUrl.replace(
-        "youtu.be/",
-        "www.youtube.com/embed/",
-      );
-      videoEmbedUrl = videoEmbedUrl.split("?")[0];
-      videoEmbedUrl = `${videoEmbedUrl}?rel=0&modestbranding=1&showinfo=0&controls=0&iv_load_policy=3&fs=0&disablekb=1`;
-      isYoutube = true;
-    }
-  }
 
   return (
     <motion.div
@@ -1679,44 +1617,17 @@ function CoursePlayerView({
           {/* Video Player */}
           <div className="bg-black rounded-2xl overflow-hidden shadow-lg aspect-video relative group flex items-center justify-center">
             {videoEmbedUrl ? (
-              isYoutube ? (
-                <iframe
-                  src={videoEmbedUrl}
+               <CustomVideoPlayer 
+                  url={videoEmbedUrl} 
                   title={course.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full border-0 absolute inset-0 z-10"
-                />
-              ) : (
-                <video
-                  src={videoEmbedUrl}
-                  controls
-                  className="w-full h-full object-cover absolute inset-0 z-10"
-                />
-              )
+                  watermarkText={studentCode || "معاينة الحماية: EDUS-XXXX-XXXX"}
+               />
             ) : (
               <div className="text-gray-500 flex flex-col items-center">
                 <Video className="w-12 h-12 mb-2 opacity-50" />
                 <p>لا يوجد فيديو متاح</p>
               </div>
             )}
-
-            <div className="absolute inset-0 pointer-events-none overflow-hidden z-50">
-              <motion.div
-                className="absolute text-white/40 bg-black/10 px-3 py-1 rounded backdrop-blur-sm text-sm sm:text-lg font-mono font-bold select-none border border-white/5"
-                animate={{
-                  top: ['10%', '80%', '20%', '70%', '10%'],
-                  left: ['10%', '60%', '80%', '20%', '10%'],
-                }}
-                transition={{
-                  duration: 25,
-                  ease: "linear",
-                  repeat: Infinity,
-                }}
-              >
-                {studentCode || "معاينة الحماية: EDUS-XXXX-XXXX"}
-              </motion.div>
-            </div>
 
             <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-2 pointer-events-none z-40">
               <Video className="w-4 h-4 text-primary-400" />
